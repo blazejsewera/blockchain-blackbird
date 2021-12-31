@@ -1,0 +1,10 @@
+{
+  "[python]": {
+    "editor.wordBasedSuggestions": true,
+    "editor.tabSize": 4,
+    "editor.rulers": [78, 80],
+    "editor.formatOnSave": true
+  },
+  "python.formatting.provider": "black",
+  "python.pythonPath": "venv/bin/python"
+}
