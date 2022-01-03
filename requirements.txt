@@ -1,2 +1,3 @@
-python_version >= 3.9
+# python_version >= 3.10
 cryptography >= 35
+black >= '21.12b0'
