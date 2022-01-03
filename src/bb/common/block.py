@@ -1,5 +1,5 @@
 import json
-from typing import List, Literal
+from typing import Literal
 from datetime import datetime as Timestamp
 from dataclasses import asdict, dataclass, field
 from cryptography.hazmat.primitives.hashes import Hash, SHA256
@@ -24,7 +24,7 @@ class Transaction:
 class Block:
     index: int = 0
     timestamp: str = Timestamp.now().isoformat(timespec="milliseconds")
-    transactions: List[Transaction] = field(default_factory=list)
+    transactions: list[Transaction] = field(default_factory=list)
     prev_hash: str = ""
     proof: int = 0
 
