@@ -1,1 +1,1 @@
-echo "Client cli: Implement me!"
+python3 ./src/clientcli.py $@

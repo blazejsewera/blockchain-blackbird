@@ -1,1 +1,1 @@
-echo "Node start script: Implement me!"
+python3 ./src/startnode.py %*
