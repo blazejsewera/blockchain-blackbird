@@ -1,9 +1,15 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+
+from bb.common.block import Block, Transaction
 
 
-@dataclass(frozen=True)
+@dataclass
 class Node:
     uid: str = ""
+    blocks: list[Block] = field(default_factory=list)
+
+    current_block: Block = field(default_factory=Block)
+    current_transactions: list[Transaction] = field(default_factory=list)
 
 
 class Network:

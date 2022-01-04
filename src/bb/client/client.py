@@ -1,7 +1,8 @@
-from Pyro5 import api as papi
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
+from Pyro5.client import _RemoteMethod as RemoteMethod
 
+from bb.common.net.papi import get_all_uris, invoke, proxy_of
 from bb.node.names import NODE_ENDPOINT
 
 
@@ -14,10 +15,8 @@ def generate_pk():
 def start():
     generate_pk()
     print("\nRemote object:")
-    ns = papi.locate_ns()
-    nodes = ns.list(NODE_ENDPOINT)
-    node1_key = list(nodes.keys())[0]
-    node1_uri = nodes[node1_key]
-    node = papi.Proxy(node1_uri)
-    print(node.echo("hello"))
-    print(node.make_block())
+    node1_uri = get_all_uris(NODE_ENDPOINT)[0]
+    node = proxy_of(node1_uri)
+    print(invoke(node.echo, "hello"))
+    if isinstance(node.get_last_block, RemoteMethod):
+        print(node.get_last_block())
