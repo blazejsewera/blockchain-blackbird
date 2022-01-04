@@ -18,5 +18,4 @@ def start():
     node1_uri = get_all_uris(NODE_ENDPOINT)[0]
     node = proxy_of(node1_uri)
     print(invoke(node.echo, "hello"))
-    if isinstance(node.get_last_block, RemoteMethod):
-        print(node.get_last_block())
+    print(invoke(node.get_last_block))

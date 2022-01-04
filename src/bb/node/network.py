@@ -11,6 +11,9 @@ class Node:
     current_block: Block = field(default_factory=Block)
     current_transactions: list[Transaction] = field(default_factory=list)
 
+    def add_transaction(self, transaction: Transaction):
+        self.current_transactions.append(transaction)
+
 
 class Network:
     nodes: list[Node] = []

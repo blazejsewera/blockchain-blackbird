@@ -1,11 +1,10 @@
-from Pyro5 import api as papi
-
 from bb.common.block import Block, Transaction
+from bb.common.net.papi import Daemon, expose
 
 from .names import NODE_ENDPOINT
 
 
-@papi.expose
+@expose
 class Endpoint:
     transactions: list[Transaction] = []
 
@@ -27,18 +26,7 @@ class Endpoint:
 
 
 def start():
-    daemon = papi.Daemon()
-    ns = papi.locate_ns()
-    uri = daemon.register(Endpoint)
-    ns.register(f"{NODE_ENDPOINT}.1", uri)
+    daemon = Daemon()
+    daemon.register(Endpoint, f"{NODE_ENDPOINT}.1")
 
-    print("Ready!")
-    try:
-        daemon.requestLoop()
-    except Exception:
-        pass
-    finally:
-        print("\nShutting down...")
-        daemon.shutdown()
-        ns.remove(name=f"{NODE_ENDPOINT}.1")
-        print("Done.")
+    daemon.start()
