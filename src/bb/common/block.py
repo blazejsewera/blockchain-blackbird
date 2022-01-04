@@ -1,8 +1,9 @@
 import json
-from typing import Literal
-from datetime import datetime as Timestamp
 from dataclasses import asdict, dataclass, field
-from cryptography.hazmat.primitives.hashes import Hash, SHA256
+from datetime import datetime as Timestamp
+from typing import Literal
+
+from cryptography.hazmat.primitives.hashes import SHA256, Hash
 
 
 @dataclass(frozen=True)
@@ -34,6 +35,7 @@ class Block:
     def to_json(self, indent=None):
         return json.dumps(asdict(self), indent=indent)
 
+    @staticmethod
     def of(block_dict: dict):
         return Block(
             index=block_dict["index"],
@@ -53,8 +55,9 @@ class Block:
             proof=block_dict["proof"],
         )
 
+    @staticmethod
     def from_json(serialized_block: str | dict):
-        if type(serialized_block) == str:
+        if isinstance(serialized_block, str):
             return Block.of(json.loads(serialized_block))
         return Block.of(serialized_block)
 

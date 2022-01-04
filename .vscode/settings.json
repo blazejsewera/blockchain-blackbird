@@ -4,8 +4,13 @@
     "editor.tabSize": 4,
     "editor.rulers": [78, 80],
     "editor.formatOnSave": true,
-    "editor.defaultFormatter": "ms-python.python"
+    "editor.formatOnPaste": false,
+    "editor.defaultFormatter": "ms-python.python",
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": true
+    }
   },
   "python.formatting.provider": "black",
-  "python.pythonPath": "venv/bin/python"
+  "python.pythonPath": "venv/bin/python",
+  "python.analysis.typeCheckingMode": "basic"
 }
