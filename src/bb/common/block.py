@@ -3,10 +3,13 @@ from dataclasses import asdict, dataclass, field, replace
 from datetime import datetime as Timestamp
 from typing import Literal
 
-from bb.common.sec.asymmetric import RSAPrivateKey, RSAPublicKey
-from bb.common.sec.asymmetric import sign as sign_with_rsa
-from bb.common.sec.asymmetric import verify as verify_with_rsa
-from bb.common.sec.hash import sha256
+from bb.common.sec.asymmetric import (
+    RSAPrivateKey,
+    RSAPublicKey,
+    sign_rsa_base64,
+    verify_rsa,
+)
+from bb.common.sec.hash import hash_hex
 
 
 @dataclass(frozen=True)
@@ -45,13 +48,13 @@ class Transaction:
 
     def sign(self, private_key: RSAPrivateKey):
         twf = self.__transaction_without_fingerprint_json()
-        signature = sign_with_rsa(twf, private_key)
+        signature = sign_rsa_base64(twf, private_key)
         self.fingerprint = signature
 
     def verify(self, public_key: RSAPublicKey) -> bool:
         twf = self.__transaction_without_fingerprint_json()
         signature = self.fingerprint
-        return verify_with_rsa(twf, signature, public_key)
+        return verify_rsa(twf, signature, public_key)
 
     @staticmethod
     def of(transaction_dict: dict):
@@ -82,8 +85,8 @@ class Block:
     def to_json(self, indent=None):
         return json.dumps(asdict(self), indent=indent)
 
-    def hash(self, to_bytes=False):
-        return sha256(self.to_json())
+    def hash(self):
+        return hash_hex(self.to_json())
 
     @staticmethod
     def of(block_dict: dict):

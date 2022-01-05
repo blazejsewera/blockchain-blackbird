@@ -1,13 +1,13 @@
-from cryptography.hazmat.primitives.hashes import SHA256, Hash
+from cryptography.hazmat.primitives.hashes import Hash
 
-from bb.common.config import DEFAULT_ENCODING
+from bb.common.config import DEFAULT_ENCODING, DEFAULT_HASH
 from bb.common.sec.encode import bytes_to_hex
 
 
-def sha256(str_to_hash: str):
+def hash_hex(str_to_hash: str):
     b = str_to_hash.encode(DEFAULT_ENCODING)
 
-    digest = Hash(SHA256())
+    digest = Hash(DEFAULT_HASH())
     digest.update(b)
     hash_bytes = digest.finalize()
 
@@ -15,5 +15,5 @@ def sha256(str_to_hash: str):
 
 
 # re-export
-SHA256
+DEFAULT_HASH
 Hash
