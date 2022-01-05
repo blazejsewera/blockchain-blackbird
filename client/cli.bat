@@ -1,1 +1,1 @@
-python ../src/clientcli.py %*
+python ./src/clientcli.py %*
