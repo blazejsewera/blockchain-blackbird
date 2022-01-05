@@ -2,6 +2,7 @@ from typing import Literal
 
 from bb.common.block import Block, Transaction
 from bb.common.net.papi import Daemon, expose, get_all_uris, invoke, oneway, proxy_of
+from bb.common.sec.asymmetric import RSAPublicKey, decode_public_key
 from bb.common.sec.guid import generate_guid
 from bb.node.names import NETWORK_NODE
 
@@ -13,16 +14,49 @@ class Node:
         "proof_found",
     ]
 
+    registered_users: dict[str, RSAPublicKey] = {}
+    """registered_users keeps track of public keys for certain user_guids
+    {"<user_guid>": <public_key>}"""
     blocks: list[Block] = []
 
     current_block: Block = Block()
     current_transactions: list[Transaction] = []
 
+    def __verify_transaction_and_perform_action(self, transaction: Transaction) -> bool:
+        def _register_user(_user_guid, _public_key_base64) -> bool:
+            _public_key = decode_public_key(_public_key_base64)
+            if not transaction.verify(_public_key):
+                return False
+            self.registered_users[_user_guid] = public_key
+            return True
+
+        user_guid = transaction.user_guid
+        data = transaction.data
+        if data.T == "register":
+            if user_guid in self.registered_users.keys():
+                print("> user already registered, not verified")
+                return False
+            return _register_user(user_guid, data.payload)
+
+        if user_guid not in self.registered_users.keys():
+            return False
+
+        public_key = self.registered_users[user_guid]
+        if not transaction.verify(public_key):
+            return False
+
+        if data.T == "revoke":
+            self.registered_users.pop(user_guid)
+
+        return True
+
     @oneway
     @expose
     def add_transaction(self, transaction_json: str):
         # TODO: verify transaction
-        self.current_transactions.append(Transaction.from_json(transaction_json))
+        transaction = Transaction.from_json(transaction_json)
+        if self.__verify_transaction_and_perform_action(transaction):
+            self.current_transactions.append(transaction)
 
     @oneway
     @expose
