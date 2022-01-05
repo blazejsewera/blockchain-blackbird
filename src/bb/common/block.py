@@ -1,8 +1,11 @@
 import json
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from datetime import datetime as Timestamp
 from typing import Literal
 
+from bb.common.sec.asymmetric import RSAPrivateKey, RSAPublicKey
+from bb.common.sec.asymmetric import sign as sign_with_rsa
+from bb.common.sec.asymmetric import verify as verify_with_rsa
 from bb.common.sec.hash import sha256
 
 
@@ -27,7 +30,7 @@ class Data:
         return Data.of(serialized_data)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=False)
 class Transaction:
     user_guid: str = ""
     fingerprint: str = ""
@@ -35,6 +38,20 @@ class Transaction:
 
     def to_json(self, indent=None):
         return json.dumps(asdict(self), indent=indent)
+
+    def __transaction_without_fingerprint_json(self):
+        transaction_without_fingerprint = replace(self, fingerprint="")
+        return transaction_without_fingerprint.to_json()
+
+    def sign(self, private_key: RSAPrivateKey):
+        twf = self.__transaction_without_fingerprint_json()
+        signature = sign_with_rsa(twf, private_key)
+        self.fingerprint = signature
+
+    def verify(self, public_key: RSAPublicKey) -> bool:
+        twf = self.__transaction_without_fingerprint_json()
+        signature = self.fingerprint
+        return verify_with_rsa(twf, signature, public_key)
 
     @staticmethod
     def of(transaction_dict: dict):
@@ -65,6 +82,9 @@ class Block:
     def to_json(self, indent=None):
         return json.dumps(asdict(self), indent=indent)
 
+    def hash(self, to_bytes=False):
+        return sha256(self.to_json())
+
     @staticmethod
     def of(block_dict: dict):
         return Block(
@@ -83,6 +103,3 @@ class Block:
         if isinstance(serialized_block, str):
             return Block.of(json.loads(serialized_block))
         return Block.of(serialized_block)
-
-    def hash(self, to_bytes=False):
-        return sha256(self.to_json())

@@ -1,5 +1,8 @@
 import unittest
+from dataclasses import replace
 from datetime import datetime as Timestamp
+
+from bb.common.sec.asymmetric import generate_private_key
 
 from .block import Block, Data, Transaction
 
@@ -53,6 +56,38 @@ class TestTransaction(unittest.TestCase):
 
         # then
         self.assertEqual(tested, self.transaction)
+
+    def test_sign_and_verify_success(self):
+        # given
+        private_key = generate_private_key()
+        public_key = private_key.public_key()
+        tested_transaction = replace(self.transaction, fingerprint="")
+
+        # when
+        tested_transaction.sign(private_key)
+
+        # then
+        self.assertNotEqual(tested_transaction.fingerprint, "")
+
+        # when
+        verified = tested_transaction.verify(public_key)
+
+        # then
+        self.assertEqual(verified, True)
+
+    def test_sign_and_verify_failure(self):
+        # given
+        first_private_key = generate_private_key()
+        second_private_key = generate_private_key()
+        second_public_key = second_private_key.public_key()
+        tested_transaction = replace(self.transaction, fingerprint="")
+
+        # when
+        tested_transaction.sign(first_private_key)
+        verified = tested_transaction.verify(second_public_key)
+
+        # then
+        self.assertEqual(verified, False)
 
 
 class TestBlock(unittest.TestCase):
