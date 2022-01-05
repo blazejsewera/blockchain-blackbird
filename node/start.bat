@@ -1,1 +1,1 @@
-python ./src/startnode.py %*
+python ../src/startnode.py %*
