@@ -3,7 +3,7 @@ from dataclasses import asdict, dataclass, field
 from datetime import datetime as Timestamp
 from typing import Literal
 
-from cryptography.hazmat.primitives.hashes import SHA256, Hash
+from bb.common.sec.hash import sha256
 
 
 @dataclass(frozen=True)
@@ -13,12 +13,42 @@ class Data:
     payload: str = ""
     """payload contains data payload (if T == 'data') or public key (otherwise)"""
 
+    def to_json(self, indent=None):
+        return json.dumps(asdict(self), indent=indent)
+
+    @staticmethod
+    def of(data_dict: dict):
+        return Data(T=data_dict["T"], payload=data_dict["payload"])
+
+    @staticmethod
+    def from_json(serialized_data: str | dict):
+        if isinstance(serialized_data, str):
+            return Data.of(json.loads(serialized_data))
+        return Data.of(serialized_data)
+
 
 @dataclass(frozen=True)
 class Transaction:
     user_guid: str = ""
     fingerprint: str = ""
     data: Data = field(default_factory=Data)
+
+    def to_json(self, indent=None):
+        return json.dumps(asdict(self), indent=indent)
+
+    @staticmethod
+    def of(transaction_dict: dict):
+        return Transaction(
+            user_guid=transaction_dict["user_guid"],
+            fingerprint=transaction_dict["fingerprint"],
+            data=Data.of(transaction_dict["data"]),
+        )
+
+    @staticmethod
+    def from_json(serialized_transaction: str | dict):
+        if isinstance(serialized_transaction, str):
+            return Transaction.of(json.loads(serialized_transaction))
+        return Transaction.of(serialized_transaction)
 
 
 @dataclass(frozen=False)
@@ -41,14 +71,7 @@ class Block:
             index=block_dict["index"],
             timestamp=block_dict["timestamp"],
             transactions=[
-                Transaction(
-                    user_guid=transaction["user_guid"],
-                    fingerprint=transaction["fingerprint"],
-                    data=Data(
-                        T=transaction["data"]["T"],
-                        payload=transaction["data"]["payload"],
-                    ),
-                )
+                Transaction.of(transaction)
                 for transaction in block_dict["transactions"]
             ],
             prev_hash=block_dict["prev_hash"],
@@ -62,12 +85,4 @@ class Block:
         return Block.of(serialized_block)
 
     def hash(self, to_bytes=False):
-        json_bytes = self.to_json().encode("utf-8")
-
-        digest = Hash(SHA256())
-        digest.update(json_bytes)
-        hash_bytes = digest.finalize()
-
-        if to_bytes:
-            return hash_bytes
-        return hash_bytes.hex()
+        return sha256(self.to_json())
