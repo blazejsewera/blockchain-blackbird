@@ -1,1 +1,1 @@
-python3 ../src/startnode.py $@
+python $(dirname $0)/../src/startnode.py $@

@@ -1,1 +1,1 @@
-python3 -m Pyro5.nameserver $@
+python -m Pyro5.nameserver $@
