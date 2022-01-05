@@ -24,8 +24,15 @@ class Node:
 
     def __verify_transaction_and_perform_action(self, transaction: Transaction) -> bool:
         def _register_user(_user_guid, _public_key_base64) -> bool:
+            if user_guid in self.registered_users.keys():
+                print("> user already registered, not verified")
+                return False
             _public_key = decode_public_key(_public_key_base64)
             if not transaction.verify(_public_key):
+                print(
+                    "> transaction not verified, "
+                    "wrong signature for the public key in payload"
+                )
                 return False
             self.registered_users[_user_guid] = public_key
             return True
@@ -33,16 +40,15 @@ class Node:
         user_guid = transaction.user_guid
         data = transaction.data
         if data.T == "register":
-            if user_guid in self.registered_users.keys():
-                print("> user already registered, not verified")
-                return False
             return _register_user(user_guid, data.payload)
 
         if user_guid not in self.registered_users.keys():
+            print("> user not registered, data.T not register, not verified")
             return False
 
         public_key = self.registered_users[user_guid]
         if not transaction.verify(public_key):
+            print("> transaction not verified, wrong signature for this public key")
             return False
 
         if data.T == "revoke":
