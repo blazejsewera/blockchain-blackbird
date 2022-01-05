@@ -20,7 +20,6 @@ class Node:
     blocks: list[Block] = []
 
     current_block: Block = Block()
-    current_transactions: list[Transaction] = []
 
     def __verify_transaction_and_perform_action(self, transaction: Transaction) -> bool:
         def _register_user(_user_guid, _public_key_base64) -> bool:
@@ -59,10 +58,9 @@ class Node:
     @oneway
     @expose
     def add_transaction(self, transaction_json: str):
-        # TODO: verify transaction
         transaction = Transaction.from_json(transaction_json)
         if self.__verify_transaction_and_perform_action(transaction):
-            self.current_transactions.append(transaction)
+            self.current_block.transactions.append(transaction)
 
     @oneway
     @expose
@@ -72,7 +70,7 @@ class Node:
 
     @oneway
     @expose
-    def proof_found(self, proof: int):
+    def proof_found(self, proof: int, hash: str):
         # TODO: stop the proof of work thread if didn't stop already
         print(f"> proof: {proof}")
 
