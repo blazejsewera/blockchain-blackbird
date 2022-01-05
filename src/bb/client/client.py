@@ -1,6 +1,5 @@
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
-from Pyro5.client import _RemoteMethod as RemoteMethod
 
 from bb.common.net.papi import get_all_uris, invoke, proxy_of
 from bb.node.names import NODE_ENDPOINT

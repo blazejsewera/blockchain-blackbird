@@ -2,7 +2,7 @@ from Pyro5 import api
 from Pyro5.client import Proxy, _RemoteMethod, _StreamResultIterator
 from Pyro5.protocol import ReceivingMessage
 from Pyro5.server import Daemon as PDaemon
-from Pyro5.server import expose
+from Pyro5.server import expose, oneway
 
 ProxyProperty = ReceivingMessage | _StreamResultIterator | _RemoteMethod | None
 
@@ -33,32 +33,34 @@ def proxy_of(uri: str) -> Proxy:
 
 
 class Daemon(PDaemon):
-    ns = locate_ns()
-
     registered_names: list[str] = []
 
     def register(self, obj_or_class: object, ns_name: str):
         """Register an object or class in daemon and nameserver."""
+        ns = locate_ns()
         uri = super().register(obj_or_class)
-        invoke(self.ns.register, ns_name, uri)
+        invoke(ns.register, ns_name, uri)
+        print(f"> registered {ns_name} in ns")
         self.registered_names.append(ns_name)
 
-    def shutdown(self):
+    def shutdown_with_ns_cleanup(self):
+        print("\n> shutting down...")
+        ns = locate_ns()
         for rname in self.registered_names:
-            invoke(self.ns.remove, rname)
+            invoke(ns.remove, rname)
             print(f"> removed {rname} from ns")
         super().shutdown()
+        print("> done")
 
     def start(self):
-        print(f"> starting daemon")
+        print("> starting daemon (Ctrl-C to stop)")
         try:
             super().requestLoop()
         except Exception:
-            pass
-        finally:
-            print("\n> shutting down...")
-            self.shutdown()
-            print("> done")
+            self.shutdown_with_ns_cleanup()
 
 
-expose  # re-export
+# re-export
+expose
+oneway
+Proxy

@@ -1,6 +1,58 @@
 import unittest
 from datetime import datetime as Timestamp
-from block import Data, Transaction, Block
+
+from .block import Block, Data, Transaction
+
+
+class TestData(unittest.TestCase):
+    # given
+    data = Data(T="data", payload="test_payload")
+    serialized_data = '{"T": "data", "payload": "test_payload"}'
+
+    def test_to_json(self):
+        # when
+        tested = self.data.to_json()
+
+        # then
+        self.assertEqual(tested, self.serialized_data)
+
+    def test_from_json(self):
+        # when
+        tested = Data.from_json(self.serialized_data)
+
+        # then
+        self.assertEqual(tested, self.data)
+
+
+class TestTransaction(unittest.TestCase):
+    # given
+    data = Data(T="data", payload="test_payload")
+    transaction = Transaction(
+        user_guid="test_user_guid", fingerprint="test_fingerprint", data=data
+    )
+    serialized_transaction = """\
+{
+    "user_guid": "test_user_guid",
+    "fingerprint": "test_fingerprint",
+    "data": {
+        "T": "data",
+        "payload": "test_payload"
+    }
+}"""
+
+    def test_to_json(self):
+        # when
+        tested = self.transaction.to_json(indent=4)
+
+        # then
+        self.assertEqual(tested, self.serialized_transaction)
+
+    def test_from_json(self):
+        # when
+        tested = Transaction.from_json(self.serialized_transaction)
+
+        # then
+        self.assertEqual(tested, self.transaction)
 
 
 class TestBlock(unittest.TestCase):
