@@ -12,6 +12,8 @@ def locate_ns() -> Proxy:
 
 
 def invoke(method: ProxyProperty, *args, **kwargs):
+    """Runs the method on the remote pyro instance.
+    Example usage: invoke(node.add_transaction, register_transaction.to_json())"""
     if isinstance(method, _RemoteMethod):
         return method(*args, **kwargs)
     else:
