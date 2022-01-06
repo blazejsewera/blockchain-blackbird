@@ -88,6 +88,17 @@ class Block:
     def hash(self):
         return hash_hex(self.to_json())
 
+    def proof_of_work(self, difficulty: int = 4):
+        found = False
+        while not found:
+            print(self.hash())
+            print(list(self.hash()[0:difficulty]))
+            print(["0"] * difficulty)
+            if list(self.hash()[0:difficulty]) == ["0"] * difficulty:
+                found = True
+                return self.proof
+            self.proof += 1
+
     @staticmethod
     def of(block_dict: dict):
         return Block(
