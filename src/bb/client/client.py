@@ -59,4 +59,3 @@ def start():
             print(
                 'Incorrect format. Enter "data <your data>" to create transaction with payload or "revoke" to revoke public key from network '
             )
-            transaction_data = input(">")
