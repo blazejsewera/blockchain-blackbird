@@ -1,3 +1,4 @@
+from threading import Thread
 from typing import Literal
 
 from bb.common.block import Block, Transaction
@@ -64,9 +65,10 @@ class Node:
 
     @oneway
     @expose
-    def start_proofing(self):
-        # TODO: spawn a thread to calculate proof of work
-        print(f"> start proofing")
+    def start_proofing(self, block: Block):
+        print("> start proofing")
+        proofing = Thread(target=block.proof_of_work)
+        proofing.start()
 
     @oneway
     @expose
