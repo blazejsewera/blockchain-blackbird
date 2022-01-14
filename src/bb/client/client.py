@@ -3,7 +3,6 @@ from random import choice
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
-from bb import client
 from bb.common.block import Data, Transaction
 from bb.common.net.papi import get_all_uris, invoke, proxy_of
 from bb.common.sec.asymmetric import encode_public_key, generate_private_key
@@ -12,15 +11,12 @@ from bb.node.names import NODE_ENDPOINT
 
 
 def create_transaction(
+    node,
     user_guid: str,
     private_key: rsa.RSAPrivateKey,
     transaction_type: Data.TransactionType,
     payload: str,
 ):
-    print("\nchoosing random node...")
-    node_uri = choice(get_all_uris(NODE_ENDPOINT))
-    node = proxy_of(node_uri)
-
     transaction_data = Data(transaction_type, payload)
     transaction = Transaction(user_guid, "", transaction_data)
     transaction.sign(private_key)
@@ -33,27 +29,38 @@ def start():
     private_key = generate_private_key()
     public_key = encode_public_key(private_key.public_key())
 
-    print("\nuser registration...")
-    create_transaction(user_guid, private_key, "register", public_key)
-    print("\nregistration done")
+    print("\nChoosing random node...")
+    node_uri = choice(get_all_uris(NODE_ENDPOINT))
+    node = proxy_of(node_uri)
+
+    print("\nUser registration...")
+    create_transaction(node, user_guid, private_key, "register", public_key)
+    print("\nRegistration done")
 
     print(
-        '\nEnter "data <your data>" to create transaction with payload or "revoke" to revoke public key from network'
+        "\nEnter:\n"
+        + '"data <your data>" to create transaction with payload,\n'
+        + '"revoke" to revoke public key from network,\n'
+        + '"commit" to freeze transactions list and inform nodes to start looking for proof of work.'
     )
     while True:
-        transaction_data = input("\n>")
-        transaction_type = transaction_data.split()[0]
+        client_input = input("\n>")
+        operation_type = client_input.split()[0]
 
-        if transaction_type == "data":
+        if operation_type == "data":
             create_transaction(
+                node,
                 user_guid,
                 private_key,
-                transaction_type,
-                transaction_data.split(" ", 1)[1],
+                operation_type,
+                client_input.split(" ", 1)[1],
             )
 
-        elif transaction_type == "revoke":
-            create_transaction(user_guid, private_key, transaction_type, public_key)
+        elif operation_type == "revoke":
+            create_transaction(node, user_guid, private_key, operation_type, public_key)
+
+        elif operation_type == "commit":
+            invoke(node.commit)
 
         else:
             print(
