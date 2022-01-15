@@ -24,8 +24,11 @@ class Node:
 
     current_block: Block = Block()
 
-    def __init__(self):
+    def __init__(self, network):
+        self.network = network
         self.log = Logger(self)
+
+        self.que = Queue()
 
     def __verify_transaction_and_perform_action(self, transaction: Transaction) -> bool:
         def _register_user(_user_guid, _public_key_base64) -> bool:
@@ -76,23 +79,25 @@ class Node:
     def start_proofing(self):
         self.log.info("start proofing")
 
-        que = Queue()
         proofing = Thread(
             target=lambda x, arg1: x.put(self.current_block.proof_of_work()),
-            args=(que, "proof"),
+            args=(self.que, "proof"),
         )
         proofing.start()
         proofing.join()
 
-        while not que.empty():
-            result = que.get()
-            self.log.info(f"proof found: {result}")
+        while not self.que.empty():
+            self.network.broadcast(
+                "proof_found", self.que.get(), self.current_block.hash()
+            )
 
     @oneway
     @expose
     def proof_found(self, proof: int, hash: str):
-        # TODO: stop the proof of work thread if didn't stop already
+        self.log.info("proof found; stop proofing")
         self.log.info(f"proof: {proof}")
+
+        self.que.get()
 
 
 class Network:
@@ -122,8 +127,8 @@ class Network:
 
 
 def setup_network(daemon: Daemon):
-    node = Node()
     network = Network()
+    node = Node(network)
 
     network_node_name = f"{NETWORK_NODE}.{generate_guid()}"
     daemon.register(node, network_node_name)
