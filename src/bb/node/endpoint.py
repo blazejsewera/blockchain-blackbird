@@ -15,20 +15,26 @@ class Endpoint:
     @oneway
     @expose
     def add_transaction(self, transaction_json: str):
+        print(f"Adding transaction: {transaction_json}")
         self.transactions.append(Transaction.from_json(transaction_json))
 
     @oneway
     @expose
-    def commit(self):
+    def commit(self, last_block: Block):
         """
         commit synchronizes all the nodes, freezes the transaction list
         in the block, and informs all the nodes to start working for proof
         """
+        print("Commit invoked")
+        print(last_block.index + 1)
+        print(self.transactions)
+        print(last_block.hash())
         block = Block(
-            index=self.get_last_block().index + 1,
+            index=last_block.index + 1,
             transactions=self.transactions,
-            prev_hash=self.get_last_block().hash(),
+            prev_hash=last_block.hash(),
         )
+        print(f"Block created: {block.to_json()}")
         self.network.broadcast("start_proofing", block)
 
     @expose
