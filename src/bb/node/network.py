@@ -2,6 +2,7 @@ from threading import Thread
 from typing import Literal
 
 from bb.common.block import Block, Transaction
+from bb.common.log import Logger
 from bb.common.net.papi import Daemon, expose, get_all_uris, invoke, oneway, proxy_of
 from bb.common.sec.asymmetric import RSAPublicKey, decode_public_key
 from bb.common.sec.guid import generate_guid
@@ -22,15 +23,18 @@ class Node:
 
     current_block: Block = Block()
 
+    def __init__(self):
+        self.log = Logger(self)
+
     def __verify_transaction_and_perform_action(self, transaction: Transaction) -> bool:
         def _register_user(_user_guid, _public_key_base64) -> bool:
             if user_guid in self.registered_users.keys():
-                print("> user already registered, not verified")
+                self.log.error("user already registered, not verified")
                 return False
             _public_key = decode_public_key(_public_key_base64)
             if not transaction.verify(_public_key):
-                print(
-                    "> transaction not verified, "
+                self.log.error(
+                    "transaction not verified, "
                     "wrong signature for the public key in payload"
                 )
                 return False
@@ -43,17 +47,20 @@ class Node:
             return _register_user(user_guid, data.payload)
 
         if user_guid not in self.registered_users.keys():
-            print("> user not registered, data.T not register, not verified")
+            self.log.error("user not registered, data.T not register, not verified")
             return False
 
         public_key = self.registered_users[user_guid]
         if not transaction.verify(public_key):
-            print("> transaction not verified, wrong signature for this public key")
+            self.log.error(
+                "transaction not verified, wrong signature for this public key"
+            )
             return False
 
         if data.T == "revoke":
             self.registered_users.pop(user_guid)
 
+        self.log.info("transaction verified")
         return True
 
     @oneway
@@ -65,23 +72,27 @@ class Node:
 
     @oneway
     @expose
-    def start_proofing(self, block: Block):
-        print("> start proofing")
-        proofing = Thread(target=block.proof_of_work)
+    def start_proofing(self):
+        self.log.info("start proofing")
+        proofing = Thread(target=self.current_block.proof_of_work)
         proofing.start()
 
     @oneway
     @expose
     def proof_found(self, proof: int, hash: str):
         # TODO: stop the proof of work thread if didn't stop already
-        print(f"> proof: {proof}")
+        self.log.info(f"proof: {proof}")
 
 
 class Network:
     node_uris: list[str] = []
 
+    def __init__(self):
+        self.log = Logger(self)
+
     def scan(self):
         self.node_uris = get_all_uris(NETWORK_NODE)
+        self.log.info(f"discovered on network: {self.node_uris}")
 
     def broadcast(self, method_name: Node.SupportedMethod, *args, **kwargs):
         unreachable_nodes: list[str] = []
@@ -89,11 +100,14 @@ class Network:
             method = getattr(proxy_of(node), method_name)
             try:
                 invoke(method, *args, **kwargs)
+                self.log.info(f"broadcasted {method_name} to {node}")
             except ConnectionError:
                 unreachable_nodes.append(node)
+                self.log.warn(f"unreachable node: {node}")
 
         for unreachable_node in unreachable_nodes:
             self.node_uris.remove(unreachable_node)
+            self.log.debug(f"removing node: {unreachable_node} from network map")
 
 
 def setup_network(daemon: Daemon):

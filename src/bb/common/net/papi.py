@@ -4,6 +4,8 @@ from Pyro5.protocol import ReceivingMessage
 from Pyro5.server import Daemon as PDaemon
 from Pyro5.server import expose, oneway
 
+from bb.common.log import Logger
+
 ProxyProperty = ReceivingMessage | _StreamResultIterator | _RemoteMethod | None
 
 
@@ -37,25 +39,29 @@ def proxy_of(uri: str) -> Proxy:
 class Daemon(PDaemon):
     registered_names: list[str] = []
 
+    def __init__(self):
+        super().__init__()
+        self.log = Logger(self)
+
     def register(self, obj_or_class: object, ns_name: str):
         """Register an object or class in daemon and nameserver."""
         ns = locate_ns()
         uri = super().register(obj_or_class)
         invoke(ns.register, ns_name, uri)
-        print(f"> registered {ns_name} in ns")
+        self.log.debug(f"registered {ns_name} in ns")
         self.registered_names.append(ns_name)
 
     def shutdown_with_ns_cleanup(self):
-        print("\n> shutting down...")
+        self.log.info("shutting down...")
         ns = locate_ns()
         for rname in self.registered_names:
             invoke(ns.remove, rname)
-            print(f"> removed {rname} from ns")
+            self.log.debug(f"removed {rname} from ns")
         super().shutdown()
-        print("> done")
+        self.log.info("done")
 
     def start(self):
-        print("> starting daemon (Ctrl-C to stop)")
+        self.log.info("starting daemon (Ctrl-C to stop)")
         try:
             super().requestLoop()
         except Exception:
