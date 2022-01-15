@@ -1,3 +1,4 @@
+from queue import Queue
 from threading import Thread
 from typing import Literal
 
@@ -74,8 +75,18 @@ class Node:
     @expose
     def start_proofing(self):
         self.log.info("start proofing")
-        proofing = Thread(target=self.current_block.proof_of_work)
+
+        que = Queue()
+        proofing = Thread(
+            target=lambda x, arg1: x.put(self.current_block.proof_of_work()),
+            args=(que, "proof"),
+        )
         proofing.start()
+        proofing.join()
+
+        while not que.empty():
+            result = que.get()
+            self.log.info(f"proof found: {result}")
 
     @oneway
     @expose
