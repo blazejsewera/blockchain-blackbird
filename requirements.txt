@@ -3,3 +3,4 @@ cryptography >= 35
 Pyro5 >= 5.13
 black >= '21.12b0'
 isort >= 5.10
+colorlog >= 6.6
