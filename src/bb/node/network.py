@@ -2,6 +2,7 @@ from queue import Queue
 from threading import Thread
 from typing import Literal
 
+from bb.common import block
 from bb.common.block import Block, Transaction
 from bb.common.log import Logger
 from bb.common.net.papi import Daemon, expose, get_all_uris, invoke, oneway, proxy_of
@@ -12,6 +13,7 @@ from bb.node.names import NETWORK_NODE
 
 class Node:
     SupportedMethod = Literal[
+        "add_block",
         "add_transaction",
         "start_proofing",
         "proof_found",
@@ -90,14 +92,36 @@ class Node:
             self.network.broadcast(
                 "proof_found", self.que.get(), self.current_block.hash()
             )
+            self.log.debug("this node found proof of work")
 
     @oneway
     @expose
     def proof_found(self, proof: int, hash: str):
-        self.log.info("proof found; stop proofing")
-        self.log.info(f"proof: {proof}")
+        self.log.info(f"proof found, verifying ...")
+        if Block.verify_hash(hash):
+            self.log.info(f"stop proofing; proof: {proof}")
+            self.que.get()
 
-        self.que.get()
+            self.network.broadcast("add_block", proof)
+
+    @oneway
+    @expose
+    def add_block(self, proof: int):
+        # if chain of blocks is empty we don't need to set index and prev_hash value -- we use default ones
+        if not self.blocks:
+            # self.current_block.timestamp = Timestamp.now().isoformat(timespec="milliseconds") -- is necessary?
+            self.current_block.proof = proof
+            self.blocks.append(self.current_block)
+        else:
+            self.current_block.index = len(self.blocks) + 1
+            # self.current_block.timestamp = Timestamp.now().isoformat(timespec="milliseconds") -- is necessary?
+            self.current_block.proof = proof
+            self.current_block.prev_hash  # TODO: idk how to do it yet, some global var i guess?
+            self.blocks.append(self.current_block)
+
+        self.log.debug(
+            self.blocks
+        )  # TODO: ok, seems like it doesn't work like we'd expect
 
 
 class Network:
