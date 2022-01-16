@@ -42,12 +42,9 @@ def start():
     log.debug(f"node {node_uri} chosen")
     node = proxy_of(node_uri)
 
-    log.info("user registration...")
-    create_transaction(node, user_guid, private_key, "register", public_key)
-    log.info("registration done")
-
     print(
         "\nEnter:\n"
+        + '"register" to register user in the system,\n'
         + '"data <your data>" to create transaction with payload,\n'
         + '"revoke" to revoke public key from network,\n'
         + '"commit" to freeze transactions list and inform nodes to start looking for proof of work.'
@@ -56,7 +53,12 @@ def start():
         client_input = input("\n> ")
         operation_type = client_input.split()[0]
 
-        if operation_type == "data":
+        if operation_type == "register":
+            log.info("user registration...")
+            create_transaction(node, user_guid, private_key, operation_type, public_key)
+            log.info("registration done")
+
+        elif operation_type == "data":
             create_transaction(
                 node,
                 user_guid,
@@ -66,7 +68,9 @@ def start():
             )
 
         elif operation_type == "revoke":
+            log.info("revoking public key...")
             create_transaction(node, user_guid, private_key, operation_type, public_key)
+            log.info("revoking done")
 
         elif operation_type == "commit":
             invoke(node.commit)
