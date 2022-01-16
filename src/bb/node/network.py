@@ -2,13 +2,11 @@ from queue import Queue
 from threading import Thread
 from typing import Literal
 
-from bb.common import block
 from bb.common.block import Block, Transaction
 from bb.common.log import Logger
-from bb.common.net.papi import Daemon, expose, get_all_uris, invoke, oneway, proxy_of
+from bb.common.names import NETWORK_NODE
+from bb.common.net.papi import expose, get_all_uris, invoke, oneway, proxy_of
 from bb.common.sec.asymmetric import RSAPublicKey, decode_public_key
-from bb.common.sec.guid import generate_guid
-from bb.node.names import NETWORK_NODE
 
 
 class Node:

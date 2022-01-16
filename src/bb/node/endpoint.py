@@ -1,9 +1,6 @@
-from bb.common.block import Block, Transaction
-from bb.common.net.papi import Daemon, expose, get_all_uris, oneway, proxy_of
-from bb.common.sec.guid import generate_guid
+from bb.common.block import Block
+from bb.common.net.papi import expose, oneway
 from bb.node.network import Network, Node
-
-from .names import NODE_ENDPOINT
 
 
 class Endpoint:

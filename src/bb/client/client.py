@@ -1,14 +1,13 @@
 from random import choice
 
 from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
 from bb.common.block import Data, Transaction
 from bb.common.log import Logger
+from bb.common.names import NODE_ENDPOINT
 from bb.common.net.papi import get_all_uris, invoke, proxy_of
 from bb.common.sec.asymmetric import encode_public_key, generate_private_key
 from bb.common.sec.guid import generate_guid
-from bb.node.names import NODE_ENDPOINT
 
 log = Logger()
 

@@ -1,8 +1,8 @@
+from bb.common.names import NETWORK_NODE, NODE_ENDPOINT
 from bb.common.net.papi import Daemon
 from bb.common.sec.guid import generate_guid
 
 from .endpoint import Endpoint
-from .names import NETWORK_NODE, NODE_ENDPOINT
 from .network import Network, Node
 
 
