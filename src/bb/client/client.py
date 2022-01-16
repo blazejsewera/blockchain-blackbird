@@ -29,6 +29,7 @@ def create_transaction(
 
 def start():
     user_guid = generate_guid()
+    log.info(f"user id: {user_guid}")
     private_key = generate_private_key()
     public_key = encode_public_key(private_key.public_key())
 
