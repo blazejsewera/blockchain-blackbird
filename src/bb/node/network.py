@@ -24,8 +24,9 @@ class Node:
     {"<user_guid>": <public_key>}"""
     blocks: list[Block] = []
     current_block: Block = Block()
+    last_transaction_json = ""
 
-    def __init__(self, network):
+    def __init__(self, network: "Network"):
         self.log = Logger(self)
         self.network = network
         self.que = Queue()
@@ -44,12 +45,14 @@ class Node:
                     "wrong signature for the public key in payload"
                 )
                 return False
-            self.registered_users[_user_guid] = public_key
+            self.registered_users.update({_user_guid: _public_key})
+            self.log.debug(f"{self.registered_users=}")
             return True
 
         user_guid = transaction.user_guid
         data = transaction.data
         if data.T == "register":
+            self.log.info(f"registering user: {user_guid} with pubkey: {data.payload}")
             return _register_user(user_guid, data.payload)
 
         if user_guid not in self.registered_users.keys():
@@ -72,6 +75,9 @@ class Node:
     @oneway
     @expose
     def add_transaction(self, transaction_json: str):
+        self.log.debug(f"transaction received: {transaction_json}")
+        if transaction_json == self.last_transaction_json:
+            return
         transaction = Transaction.from_json(transaction_json)
         if self.__verify_transaction_and_perform_action(transaction):
             self.current_block.transactions.append(transaction)
@@ -133,9 +139,10 @@ class Network:
 
     def scan(self):
         self.node_uris = get_all_uris(NETWORK_NODE)
-        self.log.info(f"discovered on network: {self.node_uris}")
+        self.log.debug(f"discovered on network: {self.node_uris}")
 
     def broadcast(self, method_name: Node.SupportedMethod, *args, **kwargs):
+        self.scan()
         unreachable_nodes: list[str] = []
         for node in self.node_uris:
             method = getattr(proxy_of(node), method_name)
@@ -149,13 +156,3 @@ class Network:
         for unreachable_node in unreachable_nodes:
             self.node_uris.remove(unreachable_node)
             self.log.debug(f"removing node: {unreachable_node} from network map")
-
-
-def setup_network(daemon: Daemon):
-    network = Network()
-    node = Node(network)
-
-    network_node_name = f"{NETWORK_NODE}.{generate_guid()}"
-    daemon.register(node, network_node_name)
-
-    network.scan()

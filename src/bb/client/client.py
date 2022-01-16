@@ -20,11 +20,11 @@ def create_transaction(
     transaction_type: Data.TransactionType,
     payload: str,
 ):
-    transaction_data = Data(transaction_type, payload)
-    transaction = Transaction(user_guid, "", transaction_data)
+    transaction_data = Data(T=transaction_type, payload=payload)
+    transaction = Transaction(user_guid=user_guid, data=transaction_data)
     transaction.sign(private_key)
     log.debug(f"{payload}")
-    invoke(node.add_transaction, transaction.to_json())
+    invoke(node.upload_transaction, transaction.to_json())
 
 
 def start():
