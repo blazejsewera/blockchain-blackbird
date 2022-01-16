@@ -88,13 +88,16 @@ class Block:
     def hash(self):
         return hash_hex(self.to_json())
 
-    def proof_of_work(self, difficulty: int = 4):
+    def proof_of_work(self):
         found = False
         while not found:
-            if list(self.hash()[0:difficulty]) == ["0"] * difficulty:
-                found = True
+            if Block.verify_hash(self.hash()):
                 return self.proof
             self.proof += 1
+
+    @staticmethod
+    def verify_hash(hash: str, difficulty: int = 4):
+        return list(hash[0:difficulty]) == ["0"] * difficulty
 
     @staticmethod
     def of(block_dict: dict):
