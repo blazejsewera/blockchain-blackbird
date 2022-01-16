@@ -23,14 +23,14 @@ class Node:
     """registered_users keeps track of public keys for certain user_guids
     {"<user_guid>": <public_key>}"""
     blocks: list[Block] = []
-
     current_block: Block = Block()
 
     def __init__(self, network):
-        self.network = network
         self.log = Logger(self)
-
+        self.network = network
         self.que = Queue()
+
+        self.prev_hash = ""
 
     def __verify_transaction_and_perform_action(self, transaction: Transaction) -> bool:
         def _register_user(_user_guid, _public_key_base64) -> bool:
@@ -102,11 +102,11 @@ class Node:
             self.log.info(f"stop proofing; proof: {proof}")
             self.que.get()
 
-            self.network.broadcast("add_block", proof)
+            self.network.broadcast("add_block", proof, hash)
 
     @oneway
     @expose
-    def add_block(self, proof: int):
+    def add_block(self, proof: int, hash: str):
         # if chain of blocks is empty we don't need to set index and prev_hash value -- we use default ones
         if not self.blocks:
             # self.current_block.timestamp = Timestamp.now().isoformat(timespec="milliseconds") -- is necessary?
@@ -116,12 +116,13 @@ class Node:
             self.current_block.index = len(self.blocks) + 1
             # self.current_block.timestamp = Timestamp.now().isoformat(timespec="milliseconds") -- is necessary?
             self.current_block.proof = proof
-            self.current_block.prev_hash  # TODO: idk how to do it yet, some global var i guess?
+            self.current_block.prev_hash = self.prev_hash
             self.blocks.append(self.current_block)
 
+        self.prev_hash = hash
         self.log.debug(
             self.blocks
-        )  # TODO: ok, seems like it doesn't work like we'd expect
+        )  # TODO: every node adds the same block, idk how to prevent it, user seems to not be registered properly
 
 
 class Network:
