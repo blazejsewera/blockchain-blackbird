@@ -9,8 +9,8 @@ from .network import Network, Node
 def start():
     daemon = Daemon()
     network = Network()
-    endpoint = Endpoint(network)
     node = Node(network)
+    endpoint = Endpoint(network, node)
 
     endpoint_name = f"{NODE_ENDPOINT}.{generate_guid()}"
     daemon.register(endpoint, endpoint_name)
