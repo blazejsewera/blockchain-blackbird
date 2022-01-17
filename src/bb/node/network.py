@@ -132,11 +132,8 @@ class Node:
     @oneway
     @expose
     def proof_found(self, proof: int, hash: str, timestamp: str):
-        if self.is_proof_found:
+        if self.is_proof_found or self.current_block is None:
             self.log.debug("proof found earlier, skipping")
-            return
-        if self.current_block is None:
-            self.log.error("node not synchronized, current block is None")
             return
         self.log.info(f"proof found, verifying ...")
         block = replace(self.current_block)

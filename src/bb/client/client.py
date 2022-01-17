@@ -49,33 +49,46 @@ def start():
         + '"revoke" to revoke public key from network,\n'
         + '"commit" to freeze transactions list and inform nodes to start looking for proof of work.'
     )
-    while True:
-        client_input = input("\n> ")
-        operation_type = client_input.split()[0]
 
-        if operation_type == "register":
-            log.info("user registration...")
-            create_transaction(node, user_guid, private_key, operation_type, public_key)
-            log.info("registration done")
+    def _input_loop():
+        while True:
+            client_input = input("\n> ")
+            operation_type = client_input.split()[0]
 
-        elif operation_type == "data":
-            create_transaction(
-                node,
-                user_guid,
-                private_key,
-                operation_type,
-                client_input.split(" ", 1)[1],
-            )
+            if operation_type == "register":
+                log.info("user registration...")
+                create_transaction(
+                    node, user_guid, private_key, operation_type, public_key
+                )
+                log.info("registration done")
 
-        elif operation_type == "revoke":
-            log.info("revoking public key...")
-            create_transaction(node, user_guid, private_key, operation_type, public_key)
-            log.info("revoking done")
+            elif operation_type == "data":
+                create_transaction(
+                    node,
+                    user_guid,
+                    private_key,
+                    operation_type,
+                    client_input.split(" ", 1)[1],
+                )
 
-        elif operation_type == "commit":
-            invoke(node.commit)
+            elif operation_type == "revoke":
+                log.info("revoking public key...")
+                create_transaction(
+                    node, user_guid, private_key, operation_type, public_key
+                )
+                log.info("revoking done")
 
-        else:
-            print(
-                'Incorrect format. Enter "data <your data>" to create transaction with payload or "revoke" to revoke public key from network '
-            )
+            elif operation_type == "commit":
+                invoke(node.commit)
+
+            else:
+                print(
+                    "Incorrect format. Enter 'data <your data>' to create transaction with payload\n"
+                    "or 'revoke' to revoke public key from network"
+                )
+
+    try:
+        _input_loop()
+    except KeyboardInterrupt:
+        log.info("exiting")
+        exit(0)
