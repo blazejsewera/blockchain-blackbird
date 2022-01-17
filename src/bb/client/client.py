@@ -1,4 +1,6 @@
+import argparse
 from random import choice
+from typing import Optional
 
 from cryptography.hazmat.primitives.asymmetric import rsa
 
@@ -26,8 +28,8 @@ def create_transaction(
     invoke(node.upload_transaction, transaction.to_json())
 
 
-def start():
-    user_guid = generate_guid()
+def start(initial_user_guid: Optional[str] = None):
+    user_guid = initial_user_guid if initial_user_guid is not None else generate_guid()
     log.info(f"user id: {user_guid}")
     private_key = generate_private_key()
     public_key = encode_public_key(private_key.public_key())
