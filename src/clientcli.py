@@ -1,7 +1,7 @@
 import argparse
 from typing import Optional
 
-from bb.client.client import start
+from bb.client.client import Client
 from bb.common.log import Logger
 
 if __name__ == "__main__":
@@ -12,4 +12,4 @@ if __name__ == "__main__":
     log = Logger()
     log.set_logger_params()
     log.debug("starting client")
-    start(user_guid)
+    Client().start(user_guid)

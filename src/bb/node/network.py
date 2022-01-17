@@ -144,7 +144,8 @@ class Node:
             self.is_proof_found = True
             self.current_block.proof = proof
             self.current_block.timestamp = timestamp
-            self.que.get()
+            if self.que.full():
+                self.que.get(timeout=1)
 
             self.network.broadcast("add_block", proof, hash)
         else:
@@ -158,6 +159,10 @@ class Node:
             return
 
         self.current_block.proof = proof
+        if self.current_block.index in [b.index for b in self.blocks]:
+            self.log.debug("block already added, skipping")
+            return
+
         self.blocks.append(self.current_block)
         self.log.debug(f"appended block: {self.current_block.to_json()}")
         db = self.__locate_db()

@@ -1,5 +1,6 @@
 from Pyro5 import api
 from Pyro5.client import Proxy, _RemoteMethod, _StreamResultIterator
+from Pyro5.errors import CommunicationError
 from Pyro5.protocol import ReceivingMessage
 from Pyro5.server import Daemon as PDaemon
 from Pyro5.server import expose, oneway
@@ -72,3 +73,4 @@ class Daemon(PDaemon):
 expose
 oneway
 Proxy
+CommunicationError
