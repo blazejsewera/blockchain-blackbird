@@ -1,11 +1,13 @@
+from dataclasses import replace
+from datetime import datetime as Timestamp
 from queue import Queue
 from threading import Thread
-from typing import Literal
+from typing import Literal, Optional
 
 from bb.common.block import Block, Transaction
 from bb.common.log import Logger
-from bb.common.names import NETWORK_NODE
-from bb.common.net.papi import expose, get_all_uris, invoke, oneway, proxy_of
+from bb.common.names import DB_ENDPOINT, NETWORK_NODE
+from bb.common.net.papi import Proxy, expose, get_all_uris, invoke, oneway, proxy_of
 from bb.common.sec.asymmetric import RSAPublicKey, decode_public_key
 
 
@@ -21,15 +23,24 @@ class Node:
     """registered_users keeps track of public keys for certain user_guids
     {"<user_guid>": <public_key>}"""
     blocks: list[Block] = []
-    current_block: Block = Block()
+    current_block: Optional[Block] = Block()
+    is_proof_found: bool = False
     last_transaction_json = ""
 
     def __init__(self, network: "Network"):
         self.log = Logger(self)
         self.network = network
+
         self.que = Queue()
 
         self.prev_hash = ""
+
+    def __locate_db(self) -> Proxy:
+        db_uris = get_all_uris(DB_ENDPOINT)
+        if len(db_uris) != 1:
+            self.log.critical("DB not running or multiple instances running")
+            exit(127)
+        return proxy_of(db_uris[0])
 
     def __verify_transaction_and_perform_action(self, transaction: Transaction) -> bool:
         def _register_user(_user_guid, _public_key_base64) -> bool:
@@ -44,7 +55,7 @@ class Node:
                 )
                 return False
             self.registered_users.update({_user_guid: _public_key})
-            self.log.debug(f"{self.registered_users=}")
+            self.log.debug(f"registered users: {list(self.registered_users.keys())}")
             return True
 
         user_guid = transaction.user_guid
@@ -73,20 +84,40 @@ class Node:
     @oneway
     @expose
     def add_transaction(self, transaction_json: str):
+        def _add_new_block_if_current_empty():
+            if not self.blocks:
+                index = 0
+                prev_hash = ""
+            else:
+                index = len(self.blocks)
+                prev_hash = self.blocks[-1].hash()
+            self.current_block = Block(index=index, prev_hash=prev_hash)
+
         self.log.debug(f"transaction received: {transaction_json}")
         if transaction_json == self.last_transaction_json:
             return
         transaction = Transaction.from_json(transaction_json)
         if self.__verify_transaction_and_perform_action(transaction):
-            self.current_block.transactions.append(transaction)
+            if self.current_block is None:
+                _add_new_block_if_current_empty()
+            self.current_block.transactions.append(transaction)  # type: ignore (doesn't see block adding)
 
     @oneway
     @expose
     def start_proofing(self):
+        if self.current_block is None:
+            self.log.warn("no block for proofing, aborting")
+            return
+
+        timestamp = Timestamp.now().isoformat(timespec="milliseconds")
+
+        self.current_block.timestamp = timestamp
+        block = self.current_block
+
         self.log.info("start proofing")
 
         proofing = Thread(
-            target=lambda x, arg1: x.put(self.current_block.proof_of_work()),
+            target=lambda x, _: x.put(block.proof_of_work()),
             args=(self.que, "proof"),
         )
         proofing.start()
@@ -94,39 +125,50 @@ class Node:
 
         while not self.que.empty():
             self.network.broadcast(
-                "proof_found", self.que.get(), self.current_block.hash()
+                "proof_found", self.que.get(), block.hash(), timestamp
             )
             self.log.debug("this node found proof of work")
 
     @oneway
     @expose
-    def proof_found(self, proof: int, hash: str):
+    def proof_found(self, proof: int, hash: str, timestamp: str):
+        if self.is_proof_found:
+            self.log.debug("proof found earlier, skipping")
+            return
+        if self.current_block is None:
+            self.log.error("node not synchronized, current block is None")
+            return
         self.log.info(f"proof found, verifying ...")
-        if Block.verify_hash(hash):
+        block = replace(self.current_block)
+        block.proof = proof
+        block.timestamp = timestamp
+        if block.verify_hash(hash):
             self.log.info(f"stop proofing; proof: {proof}")
+            self.is_proof_found = True
+            self.current_block.proof = proof
+            self.current_block.timestamp = timestamp
             self.que.get()
 
             self.network.broadcast("add_block", proof, hash)
+        else:
+            self.log.warn("hashes don't match")
 
     @oneway
     @expose
     def add_block(self, proof: int, hash: str):
-        # if chain of blocks is empty we don't need to set index and prev_hash value -- we use default ones
-        if not self.blocks:
-            # self.current_block.timestamp = Timestamp.now().isoformat(timespec="milliseconds") -- is necessary?
-            self.current_block.proof = proof
-            self.blocks.append(self.current_block)
-        else:
-            self.current_block.index = len(self.blocks) + 1
-            # self.current_block.timestamp = Timestamp.now().isoformat(timespec="milliseconds") -- is necessary?
-            self.current_block.proof = proof
-            self.current_block.prev_hash = self.prev_hash
-            self.blocks.append(self.current_block)
+        if self.current_block is None:
+            self.log.debug("current block already added, no new transactions, skipping")
+            return
 
-        self.prev_hash = hash
-        self.log.debug(
-            self.blocks
-        )  # TODO: every node adds the same block, idk how to prevent it, user seems to not be registered properly
+        self.current_block.proof = proof
+        self.blocks.append(self.current_block)
+        self.log.debug(f"appended block: {self.current_block.to_json()}")
+        db = self.__locate_db()
+        invoke(db.save_block, self.current_block.to_json())
+        self.log.debug("sent block to db")
+
+        self.current_block = None
+        self.is_proof_found = False
 
 
 class Network:

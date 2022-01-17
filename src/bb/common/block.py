@@ -88,15 +88,18 @@ class Block:
     def hash(self):
         return hash_hex(self.to_json())
 
+    def verify_hash(self, hash: str) -> bool:
+        return self.hash() == hash
+
     def proof_of_work(self):
         found = False
         while not found:
-            if Block.verify_hash(self.hash()):
+            if Block.verify_hash_difficulty(self.hash()):
                 return self.proof
             self.proof += 1
 
     @staticmethod
-    def verify_hash(hash: str, difficulty: int = 4):
+    def verify_hash_difficulty(hash: str, difficulty: int = 4) -> bool:
         return list(hash[0:difficulty]) == ["0"] * difficulty
 
     @staticmethod

@@ -5,7 +5,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from bb.common.block import Data, Transaction
 from bb.common.log import Logger
 from bb.common.names import NODE_ENDPOINT
-from bb.common.net.papi import get_all_uris, invoke, proxy_of
+from bb.common.net.papi import Proxy, get_all_uris, invoke, proxy_of
 from bb.common.sec.asymmetric import encode_public_key, generate_private_key
 from bb.common.sec.guid import generate_guid
 
@@ -13,7 +13,7 @@ log = Logger()
 
 
 def create_transaction(
-    node,
+    node: Proxy,
     user_guid: str,
     private_key: rsa.RSAPrivateKey,
     transaction_type: Data.TransactionType,
