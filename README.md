@@ -11,13 +11,17 @@ A simple immutable database based on blockchain.
   ```bash
   ./ns/start
   ```
+- Start the DB (Persistence microservice)
+  ```bash
+  ./db/start
+  ```
 - Start a couple of nodes
   ```bash
-  ./node/start # TODO: implement start node script
+  ./node/start
   ```
 - Make a transaction
   ```bash
-  ./client/cli # TODO: transaction syntax
+  ./client/cli
   ```
 
 ## Development
